@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 #Starting apache2 server
 
+echo "Hello Holberton" > /var/www/html/index.html
+exit
+docker commit [CONTAINER ID] holbertonschool/265-0
 docker run -p 8080:80 -d -it holbertonschool/265-0
-
