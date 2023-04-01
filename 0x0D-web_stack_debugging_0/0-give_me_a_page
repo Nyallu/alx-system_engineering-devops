@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 #Starting apache2 server
 
-service apache2 start
+docker run -p 8080:80 -d -it holbertonschool/265-0
+
