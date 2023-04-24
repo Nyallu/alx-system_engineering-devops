@@ -3,28 +3,33 @@
 tasks and total number of tasks from an API
 '''
 
-import re
 import requests
 import sys
 
-REST_API = "https://jsonplaceholder.typicode.com"
+if len(sys.argv) != 2:
+    print("Usage: {} employee_id".format(sys.argv[0]))
+    sys.exit(1)
 
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        if re.fullmatch(r'\d+', sys.argv[1]):
-            id = int(sys.argv[1])
-            emp_req = requests.get('{}/users/{}'.format(REST_API, id)).json()
-            task_req = requests.get('{}/todos'.format(REST_API)).json()
-            emp_name = emp_req.get('name')
-            tasks = list(filter(lambda x: x.get('userId') == id, task_req))
-            completed_tasks = list(filter(lambda x: x.get('completed'), tasks))
-            print(
-                'Employee {} is done with tasks({}/{}):'.format(
-                    emp_name,
-                    len(completed_tasks),
-                    len(tasks)
-                )
-            )
-            if len(completed_tasks) > 0:
-                for task in completed_tasks:
-                    print('\t {}'.format(task.get('title')))
+employee_id = sys.argv[1]
+base_url = "https://jsonplaceholder.typicode.com"
+
+# Get employee information
+response = requests.get("{}/users/{}".format(base_url, employee_id))
+employee = response.json()
+employee_name = employee["name"]
+
+# Get employee's tasks
+response = requests.get("{}/todos?userId={}".format(base_url, employee_id))
+tasks = response.json()
+
+# Count the number of completed tasks
+completed_tasks = [task for task in tasks if task["completed"]]
+num_completed_tasks = len(completed_tasks)
+
+# Print the progress report
+print("Employee {} is done with tasks({}/{}):".format(
+    employee_name, num_completed_tasks, len(tasks)))
+
+for task in completed_tasks:
+    print("\t {}".format(task["title"]))
+
