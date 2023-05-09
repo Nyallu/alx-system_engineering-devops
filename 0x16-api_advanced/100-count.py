@@ -1,35 +1,63 @@
 #!/usr/bin/python3
+""" Module for storing the count_words function. """
+from requests import get
 
-"""
-importing requests module
-"""
 
-import re
+def count_words(subreddit, word_list, word_count=[], page_after=None):
+    """
+    Prints the count of the given words present in the title of the
+    subreddit's hottest articles.
+    """
+    headers = {'User-Agent': 'HolbertonSchool'}
 
-def count_words(subreddit, word_list, count_dict=None, after=None):
-    if count_dict is None:
-        count_dict = {}
+    word_list = [word.lower() for word in word_list]
 
-    # perform API call here to get titles of hot articles from subreddit
-    # use after parameter to get next page of results if available
+    if bool(word_count) is False:
+        for word in word_list:
+            word_count.append(0)
 
-    # parse titles and count occurrences of words
-    title_words = [re.findall(r'\b\w+\b', title.lower()) for title in titles]
-    title_words = [word for sublist in title_words for word in sublist] # flatten list of lists
-    for word in word_list:
-        count = title_words.count(word)
-        if count > 0:
-            if word in count_dict:
-                count_dict[word] += count
+    if page_after is None:
+        url = 'https://www.reddit.com/r/{}/hot.json'.format(subreddit)
+        r = get(url, headers=headers, allow_redirects=False)
+        if r.status_code == 200:
+            for child in r.json()['data']['children']:
+                i = 0
+                for i in range(len(word_list)):
+                    for word in [w for w in child['data']['title'].split()]:
+                        word = word.lower()
+                        if word_list[i] == word:
+                            word_count[i] += 1
+                    i += 1
+
+            if r.json()['data']['after'] is not None:
+                count_words(subreddit, word_list,
+                            word_count, r.json()['data']['after'])
+    else:
+        url = ('https://www.reddit.com/r/{}/hot.json?after={}'
+               .format(subreddit,
+                       page_after))
+        r = get(url, headers=headers, allow_redirects=False)
+
+        if r.status_code == 200:
+            for child in r.json()['data']['children']:
+                i = 0
+                for i in range(len(word_list)):
+                    for word in [w for w in child['data']['title'].split()]:
+                        word = word.lower()
+                        if word_list[i] == word:
+                            word_count[i] += 1
+                    i += 1
+            if r.json()['data']['after'] is not None:
+                count_words(subreddit, word_list,
+                            word_count, r.json()['data']['after'])
             else:
-                count_dict[word] = count
+                dicto = {}
+                for key_word in list(set(word_list)):
+                    i = word_list.index(key_word)
+                    if word_count[i] != 0:
+                        dicto[word_list[i]] = (word_count[i] *
+                                               word_list.count(word_list[i]))
 
-    # recursively call function with after parameter to get next page of results
-    if after is not None:
-        count_words(subreddit, word_list, count_dict, after=after)
-
-    # sort and print results
-    sorted_results = sorted(count_dict.items(), key=lambda x: (-x[1], x[0]))
-    for word, count in sorted_results:
-        print("{}: {}".format(word, count))
-
+                for key, value in sorted(dicto.items(),
+                                         key=lambda x: (-x[1], x[0])):
+                    print('{}: {}'.format(key, value))
